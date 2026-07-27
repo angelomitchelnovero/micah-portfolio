@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Micah Guevarra, LPT — Virtual Assistant, Customer Service Professional, and ESL Teacher helping businesses thrive with organized, efficient support.">
+    <meta name="theme-color" content="#1A1A2E">
+    <title>micah.web-portfolio</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Ctext%20x%3D%2216%22%20y%3D%2223%22%20font-family%3D%22Georgia%2C%20serif%22%20font-size%3D%2224%22%20font-weight%3D%22700%22%20fill%3D%22%23E94560%22%20text-anchor%3D%22middle%22%3EM%3C%2Ftext%3E%3C%2Fsvg%3E">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Source+Sans+3:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Source Sans 3"', 'system-ui', 'sans-serif'],
+                        display: ['"Playfair Display"', 'Georgia', 'serif'],
+                    },
+                    colors: {
+                        primary: '#1A1A2E',
+                        secondary: '#16213E',
+                        accent: '#E94560',
+                        'accent-dark': '#c93850',
+                        cream: '#FFF8F3',
+                        sand: '#F5EDE3',
+                        mist: '#EEF1F6',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 text-gray-800">
+    <!-- Navigation -->
+    <nav id="navbar" class="fixed top-0 left-0 right-0 bg-white/95 backdrop-blur-sm z-50 transition-all duration-300">
+        <div class="max-w-6xl mx-auto px-5 py-4 flex justify-between items-center">
+            <a href="#home" id="navLogo" class="text-2xl font-bold text-primary font-display flex items-baseline whitespace-nowrap"></a>
+            <div class="hidden md:flex items-center gap-6 flex-wrap justify-end" data-nav-desktop></div>
+            <button class="md:hidden" onclick="toggleMenu()" aria-label="Toggle menu">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+            </button>
+        </div>
+        <!-- Mobile Menu -->
+        <div id="mobileMenu" class="hidden md:hidden bg-white border-t">
+            <div class="px-5 py-4 flex flex-col gap-4" data-nav-mobile></div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="home" class="gradient-bg min-h-screen flex items-center relative overflow-hidden">
+        <div class="absolute inset-0 pattern-bg opacity-30"></div>
+        <div class="absolute -bottom-32 -right-32 w-96 h-96 bg-accent/30 rounded-full glow-effect"></div>
+
+        <div class="max-w-6xl mx-auto px-5 py-32 grid md:grid-cols-2 gap-12 items-center relative z-10">
+            <div class="text-primary">
+                <span class="inline-block bg-white px-4 py-2 rounded-full text-sm font-medium mb-6 border border-primary/10 text-primary" data-hero-badge></span>
+                <h1 class="font-display text-4xl md:text-5xl lg:text-6xl font-bold mb-4 text-primary">
+                    <span data-hero-greeting></span> <span class="text-accent" data-hero-name></span>
+                </h1>
+                <p class="text-xl md:text-2xl font-light mb-4 text-primary/80" data-hero-role></p>
+                <p class="text-lg text-primary/70 mb-8 max-w-md" data-hero-tagline></p>
+                <div class="flex flex-wrap gap-4">
+                    <a href="#services" class="bg-accent text-white px-6 py-3 rounded-full font-semibold hover:bg-accent-dark transition hover:-translate-y-1">View Services</a>
+                    <a href="#contact" class="border-2 border-primary/20 text-primary px-6 py-3 rounded-full font-semibold hover:bg-primary hover:text-white transition hover:-translate-y-1">Get in Touch</a>
+                    <a href="assets/MBG_RESUME.pdf" download class="bg-white border border-primary/15 text-primary px-6 py-3 rounded-full font-semibold hover:bg-primary hover:text-white transition flex items-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                        Download Resume
+                    </a>
+                </div>
+            </div>
+            <div class="flex justify-center">
+                <div class="relative w-72 h-72 md:w-96 md:h-96">
+                    <img data-hero-portrait alt="Micah Guevarra" class="w-full h-full object-cover rounded-2xl shadow-2xl">
+                    <div class="absolute -bottom-4 -right-4 bg-accent text-white px-4 py-2 rounded-lg">
+                        <p class="font-bold text-lg" data-hero-portrait-badge-title></p>
+                        <p class="text-xs" data-hero-portrait-badge-subtitle></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="about" class="py-24 bg-white">
+        <div class="max-w-6xl mx-auto px-5">
+            <div class="text-center mb-16 fade-in">
+                <h2 class="section-title font-display text-3xl md:text-4xl font-bold text-primary mb-4" data-section-title="about"></h2>
+                <p class="text-gray-500 max-w-md mx-auto" data-section-subtitle="about"></p>
+            </div>
+            <div class="grid md:grid-cols-2 gap-12 items-center">
+                <div class="fade-in">
+                    <img data-about-image alt="About Micah" class="w-full rounded-2xl shadow-lg">
+                </div>
+                <div class="fade-in">
+                    <h3 class="text-2xl font-bold text-primary mb-4" data-about-heading></h3>
+                    <div class="text-gray-600 mb-6 space-y-4" data-about-paragraphs></div>
+                    <div class="grid grid-cols-2 gap-4" data-about-stats></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Services Section -->
+    <section id="services" class="py-24 bg-gray-50">
+        <div class="max-w-6xl mx-auto px-5">
+            <div class="text-center mb-16 fade-in">
+                <h2 class="section-title font-display text-3xl md:text-4xl font-bold text-primary mb-4" data-section-title="services"></h2>
+                <p class="text-gray-500 max-w-md mx-auto" data-section-subtitle="services"></p>
+            </div>
+            <div class="grid md:grid-cols-3 gap-8" data-services></div>
+        </div>
+    </section>
+
+    <!-- Experience Section -->
+    <section id="experience" class="py-24 bg-white">
+        <div class="max-w-4xl mx-auto px-5">
+            <div class="text-center mb-16 fade-in">
+                <h2 class="section-title font-display text-3xl md:text-4xl font-bold text-primary mb-4" data-section-title="experience"></h2>
+                <p class="text-gray-500" data-section-subtitle="experience"></p>
+            </div>
+            <div class="space-y-8" data-experience></div>
+        </div>
+    </section>
+
+    <!-- Skills Section -->
+    <section id="skills" class="py-24 bg-gray-50">
+        <div class="max-w-4xl mx-auto px-5">
+            <div class="text-center mb-16 fade-in">
+                <h2 class="section-title font-display text-3xl md:text-4xl font-bold text-primary mb-4" data-section-title="skills"></h2>
+                <p class="text-gray-500" data-section-subtitle="skills"></p>
+            </div>
+            <div class="space-y-8 fade-in" data-skills></div>
+        </div>
+    </section>
+
+    <!-- Testimonials -->
+    <section id="testimonials" class="py-24 bg-white">
+        <div class="max-w-6xl mx-auto px-5">
+            <div class="text-center mb-16 fade-in">
+                <h2 class="section-title font-display text-3xl md:text-4xl font-bold text-primary mb-4" data-section-title="testimonials"></h2>
+                <p class="text-gray-500" data-section-subtitle="testimonials"></p>
+            </div>
+
+            <!-- Unified testimonial carousel: hard-coded + approved visitor feedback -->
+            <div class="relative" data-testimonials-root tabindex="0" aria-roledescription="carousel" aria-label="Testimonials">
+                <button data-prev class="nav-arrow absolute -left-2 md:-left-5 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/95 shadow-md hover:bg-white text-primary grid place-items-center transition" aria-label="Previous testimonials" hidden>
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                </button>
+                <button data-next class="nav-arrow absolute -right-2 md:-right-5 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/95 shadow-md hover:bg-white text-primary grid place-items-center transition" aria-label="Next testimonials" hidden>
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                </button>
+
+                <div class="overflow-hidden px-2" data-stage>
+                    <div data-testimonials></div>
+                </div>
+
+                <div class="flex justify-center gap-2 mt-6" data-dots hidden></div>
+            </div>
+
+            <!-- Visitor feedback form -->
+            <div class="mt-20 fade-in">
+                <div class="text-center mb-10">
+                    <h3 class="font-display text-2xl md:text-3xl font-bold text-primary mb-3">Leave a Feedback</h3>
+                    <p class="text-gray-500 max-w-md mx-auto">Worked with Micah? Share your experience — submissions are reviewed before they appear on the site.</p>
+                </div>
+
+                <form id="feedbackForm" class="card bg-sand p-6 md:p-8 rounded-2xl max-w-2xl mx-auto">
+                    <div class="grid md:grid-cols-2 gap-4 mb-5">
+                        <div>
+                            <label class="block text-gray-700 font-medium mb-2" for="feedbackName">Your Name <span class="text-gray-400 font-normal">(optional)</span></label>
+                            <input
+                                id="feedbackName"
+                                name="name"
+                                type="text"
+                                maxlength="60"
+                                class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-accent focus:ring-2 focus:ring-accent/20 outline-none transition bg-white"
+                                placeholder="Jane Doe"
+                            >
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 font-medium mb-2" for="feedbackCompany">Company / Role <span class="text-gray-400 font-normal">(optional)</span></label>
+                            <input
+                                id="feedbackCompany"
+                                name="company"
+                                type="text"
+                                maxlength="80"
+                                class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-accent focus:ring-2 focus:ring-accent/20 outline-none transition bg-white"
+                                placeholder="Acme Inc. · Marketing Lead"
+                            >
+                        </div>
+                    </div>
+                    <div class="mb-5">
+                        <label class="block text-gray-700 font-medium mb-2">Rating <span class="text-accent">*</span></label>
+                        <div class="flex items-center gap-1" id="feedbackStars" role="radiogroup" aria-label="Star rating">
+                            <!-- 5 buttons rendered by JS -->
+                        </div>
+                    </div>
+
+                    <div class="mb-5">
+                        <label class="block text-gray-700 font-medium mb-2" for="feedbackMessage">Your Feedback <span class="text-accent">*</span></label>
+                        <textarea
+                            id="feedbackMessage"
+                            name="message"
+                            required
+                            maxlength="500"
+                            rows="4"
+                            class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-accent focus:ring-2 focus:ring-accent/20 outline-none transition bg-white"
+                            placeholder="Tell Micah what you appreciated about working together..."
+                        ></textarea>
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <p id="feedbackStatus" class="text-sm text-gray-500" aria-live="polite"></p>
+                        <button type="submit" class="bg-accent text-white px-6 py-3 rounded-full font-semibold hover:bg-accent-dark transition">
+                            Submit Feedback
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <!-- Projects Section -->
+    <section id="projects" class="py-24 bg-cream">
+        <div class="max-w-5xl mx-auto px-5">
+            <div class="text-center mb-12 fade-in">
+                <h2 class="section-title font-display text-3xl md:text-4xl font-bold text-primary mb-4" data-section-title="projects"></h2>
+                <p class="text-gray-500 max-w-md mx-auto" data-section-subtitle="projects"></p>
+            </div>
+
+            <div class="relative fade-in" data-carousel tabindex="0" aria-roledescription="carousel" aria-label="Project reels">
+                <div class="relative overflow-hidden rounded-3xl shadow-card bg-sand aspect-video" data-stage></div>
+
+                <button data-prev class="absolute left-3 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/95 shadow-md hover:bg-white text-primary grid place-items-center transition" aria-label="Previous reel">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                </button>
+                <button data-next class="absolute right-3 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/95 shadow-md hover:bg-white text-primary grid place-items-center transition" aria-label="Next reel">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                </button>
+
+                <div class="flex justify-center gap-2 mt-6" data-dots></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section id="contact" class="gradient-bg-dark py-24 relative overflow-hidden">
+        <div class="absolute -top-32 -left-32 w-64 h-64 bg-accent/20 rounded-full"></div>
+        <div class="max-w-4xl mx-auto px-5 relative z-10">
+            <div class="text-center mb-16 fade-in">
+                <h2 class="section-title font-display text-3xl md:text-4xl font-bold text-white mb-4" data-section-title="contact"></h2>
+                <p class="text-white/70" data-section-subtitle="contact"></p>
+            </div>
+            <div class="grid md:grid-cols-2 gap-8 items-start">
+                <div class="fade-in">
+                    <h3 class="text-xl font-bold text-white mb-4" data-contact-heading></h3>
+                    <p class="text-white/70 mb-6" data-contact-blurb></p>
+                    <div class="space-y-4" data-contact-methods></div>
+                </div>
+                <div class="bg-white p-8 rounded-2xl shadow-2xl fade-in">
+                    <div id="formSuccess" class="hidden bg-green-100 text-green-800 p-4 rounded-xl mb-4 text-center font-medium"></div>
+                    <div id="formError" class="hidden bg-red-100 text-red-800 p-4 rounded-xl mb-4 text-center font-medium"></div>
+                    <form id="contactForm" action="https://formspree.io/f/xeeyvzkg" method="POST">
+                        <input type="hidden" name="_replyto" id="formReplyTo">
+                        <div class="mb-4">
+                            <label class="block text-gray-700 font-medium mb-2">Your Name</label>
+                            <input type="text" name="name" required class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-accent focus:ring-2 focus:ring-accent/20 outline-none transition" placeholder="John Doe">
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-gray-700 font-medium mb-2">Your Email</label>
+                            <input type="email" name="email" id="formEmail" required class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-accent focus:ring-2 focus:ring-accent/20 outline-none transition" placeholder="john@example.com">
+                        </div>
+                        <div class="mb-6">
+                            <label class="block text-gray-700 font-medium mb-2">Your Message</label>
+                            <textarea name="message" required class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-accent focus:ring-2 focus:ring-accent/20 outline-none transition" rows="4" placeholder="Tell me about your project..."></textarea>
+                        </div>
+                        <button type="submit" class="w-full bg-accent text-white py-3 rounded-xl font-semibold hover:bg-accent-dark transition">Send Message</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-primary py-8 text-center">
+        <div class="max-w-6xl mx-auto px-5">
+            <p class="text-white/70 mb-2" data-footer-copyright></p>
+            <p class="text-white/50 text-sm" data-footer-tagline></p>
+        </div>
+    </footer>
+
+    <script src="js/data.js"></script>
+    <script src="js/admin-config.js"></script>
+    <script src="js/components/chatbot.js"></script>
+    <script src="js/main.js"></script>
+
+    <!-- Chatbot mount point -->
+    <div id="chatbot-root"></div>
+</body>
+</html>

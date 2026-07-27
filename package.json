@@ -1,0 +1,15 @@
+{
+  "name": "micah-portfolio",
+  "version": "1.0.0",
+  "main": "__diag.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "happy-dom": "^20.11.1"
+  }
+}

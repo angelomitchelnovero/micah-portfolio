@@ -1,0 +1,377 @@
+/* ============================================================
+   Micah Guevarra Portfolio — Tokens & Components
+   ============================================================ */
+
+:root {
+  --color-primary: #1A1A2E;
+  --color-secondary: #16213E;
+  --color-accent: #E94560;
+  --color-accent-dark: #c93850;
+  --color-cream: #FFF8F3;
+  --color-sand: #F5EDE3;
+  --color-mist: #EEF1F6;
+  --color-text: #1A1A2E;
+  --color-text-soft: #6B7280;
+  --shadow-card: 0 4px 24px rgba(26, 26, 46, 0.08);
+  --shadow-card-hover: 0 12px 32px rgba(26, 26, 46, 0.14);
+  --radius-card: 1.25rem;
+  --transition: 0.3s ease;
+}
+
+/* ---------- Base ---------- */
+body {
+  font-family: 'Source Sans 3', system-ui, sans-serif;
+  color: var(--color-text);
+  background: var(--color-cream);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, .font-display {
+  font-family: 'Playfair Display', Georgia, serif;
+  letter-spacing: -0.01em;
+}
+
+/* ---------- Section headings: coral underline ---------- */
+.section-title {
+  position: relative;
+  display: inline-block;
+}
+.section-title::after {
+  content: '';
+  display: block;
+  width: 56px;
+  height: 3px;
+  background: var(--color-accent);
+  border-radius: 999px;
+  margin: 0.75rem auto 0;
+}
+
+/* ---------- Hero / Contact gradients ---------- */
+.gradient-bg {
+  background:
+    radial-gradient(ellipse at top right, rgba(233, 69, 96, 0.18), transparent 60%),
+    radial-gradient(ellipse at bottom left, rgba(238, 241, 246, 0.55), transparent 60%),
+    linear-gradient(135deg, #FFF8F3 0%, #F5EDE3 50%, #EEF1F6 100%);
+}
+
+.gradient-bg-dark {
+  background: linear-gradient(135deg, #1A1A2E 0%, #16213E 100%);
+}
+
+/* Subtle pulsing blob used behind hero portrait */
+.glow-effect {
+  animation: pulse 8s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { transform: scale(1);   opacity: 0.35; }
+  50%      { transform: scale(1.1); opacity: 0.55; }
+}
+
+/* Subtle dot pattern overlay for hero */
+.pattern-bg {
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%231A1A2E' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* ---------- Reveal-on-scroll ---------- */
+.fade-in {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.7s ease, transform 0.7s ease;
+}
+.fade-in.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ---------- Unified card ---------- */
+.card {
+  background: #ffffff;
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  transition: transform var(--transition), box-shadow var(--transition);
+}
+.card:hover {
+  transform: translateY(-6px);
+  box-shadow: var(--shadow-card-hover);
+}
+
+/* ---------- Navbar scroll state ---------- */
+#navbar.scrolled {
+  box-shadow: 0 2px 16px rgba(26, 26, 46, 0.08);
+}
+
+/* ---------- Active / inactive nav links ---------- */
+.nav-link {
+  position: relative;
+  padding: 0.25rem 0;
+  color: var(--color-text-soft);
+  transition: color var(--transition);
+}
+.nav-link:hover { color: var(--color-accent); }
+.nav-link.is-active { color: var(--color-accent); }
+.nav-link.is-active::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -6px;
+  height: 2px;
+  background: var(--color-accent);
+  border-radius: 999px;
+}
+
+/* ---------- Projects carousel ---------- */
+[data-carousel] [data-slide] {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.6s ease;
+}
+[data-carousel] [data-slide].is-active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+[data-dots] [data-dot] {
+  background: #D1D5DB;
+  transition: background 0.3s ease, transform 0.3s ease;
+}
+[data-dots] [data-dot].is-active {
+  background: var(--color-accent);
+  transform: scale(1.25);
+}
+
+.shadow-card {
+  box-shadow: var(--shadow-card);
+}
+
+/* ---------- Reduced motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .fade-in,
+  .glow-effect,
+  [data-carousel] [data-slide],
+  [data-dots] [data-dot],
+  .card,
+  .nav-link {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* ---------- Chatbot ---------- */
+.btn-primary {
+  background: var(--color-accent);
+  color: #ffffff;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  transition: background 0.2s ease, transform 0.15s ease;
+}
+.btn-primary:hover {
+  background: var(--color-accent-dark);
+  transform: translateY(-1px);
+}
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ---------- Visitor feedback form ---------- */
+.star-btn {
+  font-size: 1.75rem;
+  line-height: 1;
+  color: #D1D5DB;
+  background: none;
+  border: none;
+  padding: 2px 4px;
+  cursor: pointer;
+  transition: color 0.15s ease, transform 0.1s ease;
+}
+.star-btn:hover,
+.star-btn:focus-visible {
+  color: var(--color-accent);
+  outline: none;
+}
+.star-btn.is-active {
+  color: var(--color-accent);
+}
+.star-btn:hover {
+  transform: scale(1.15);
+}
+
+.feedback-card-tag {
+  display: inline-block;
+  font-size: 0.7rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+  background: rgba(233, 69, 96, 0.08);
+  padding: 2px 8px;
+  border-radius: 999px;
+  margin-bottom: 0.75rem;
+  font-weight: 600;
+}
+
+/* ---------- Admin per-card actions ---------- */
+.admin-card-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px dashed rgba(26, 26, 46, 0.12);
+}
+.admin-action {
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.4rem 0.85rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.1s ease;
+  background: #ffffff;
+}
+.admin-action:hover { transform: translateY(-1px); }
+.admin-action-show  { color: #16a34a; border-color: #16a34a; }
+.admin-action-show:hover  { background: #16a34a; color: #ffffff; }
+.admin-action-hide  { color: #6B7280; border-color: #6B7280; }
+.admin-action-hide:hover  { background: #6B7280; color: #ffffff; }
+.admin-action-delete { color: var(--color-accent); border-color: var(--color-accent); }
+.admin-action-delete:hover { background: var(--color-accent); color: #ffffff; }
+
+/* ---------- Admin password modal ---------- */
+.admin-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(26, 26, 46, 0.55);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 1.5rem;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+.admin-modal-backdrop.is-open {
+  display: flex;
+  opacity: 1;
+}
+.admin-modal {
+  background: #ffffff;
+  width: 100%;
+  max-width: 22rem;
+  border-radius: var(--radius-card);
+  padding: 1.5rem;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.25);
+  transform: translateY(8px);
+  transition: transform 0.2s ease;
+}
+.admin-modal-backdrop.is-open .admin-modal { transform: translateY(0); }
+.admin-modal-cancel {
+  background: transparent;
+  color: var(--color-text-soft);
+  padding: 0.55rem 1rem;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  border: none;
+  cursor: pointer;
+  transition: color 0.2s ease, background 0.2s ease;
+}
+.admin-modal-cancel:hover { color: var(--color-primary); background: rgba(26, 26, 46, 0.05); }
+.admin-modal-submit {
+  background: var(--color-accent);
+  color: #ffffff;
+  padding: 0.55rem 1.25rem;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.15s ease;
+}
+.admin-modal-submit:hover { background: var(--color-accent-dark); transform: translateY(-1px); }
+
+/* ---------- Shared carousel arrows (used by testimonials + projects) ---------- */
+.nav-arrow {
+  z-index: 5;
+  /* On touch devices :hover can leave the arrow in a transformed state,
+     so we explicitly set cursor:pointer (the default for <button> is
+     already pointer, but we restate it here so any override elsewhere
+     can't strip it). */
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.nav-arrow:hover {
+  transform: translateY(-50%) scale(1.05);
+}
+
+/* Testimonials row:
+   The strip is a horizontal flex of slides; initTestimonialsCarousel()
+   measures the stage's pixel width, sizes each slide to exactly 1/3 of
+   the stage (minus gap), and translates the strip between pages. The
+   strip itself is pageCount stages wide so it overflows the stage and
+   can slide left. Cards inside each slide share an equal min-height so
+   the row looks uniform regardless of quote length. */
+[data-testimonials] {
+  display: flex;
+  gap: 2rem;
+  transition: transform 0.45s cubic-bezier(0.22, 0.61, 0.36, 1);
+  will-change: transform;
+  align-items: stretch; /* equal-height children */
+}
+[data-testimonials] > [data-slide] {
+  /* Width is set in pixels by initTestimonialsCarousel() based on the
+     stage's measured width, so 3 cards fit perfectly with 2rem gaps. */
+  flex: 0 0 auto;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+/* Consistent card dimensions across the row: every slide IS the card
+   (buildCardHtml puts the .card class on the [data-slide] element). Use
+   a fixed height so shorter quotes still match taller cards, and make
+   the card itself a flex column so the author line stays pinned at
+   the bottom regardless of how long the quote is. */
+[data-testimonials] > [data-slide].card {
+  height: 320px;
+  display: flex;
+  flex-direction: column;
+}
+@media (max-width: 640px) {
+  /* Slightly shorter cards on mobile so the row doesn't feel cramped. */
+  [data-testimonials] > [data-slide].card { height: 280px; }
+}
+
+/* ---------- Admin status pip (visitor cards only, admin view) ----------
+   Small label that tags a visitor card as approved (muted) or pending
+   (accent). Lives at the top-right of the card; the card itself stays
+   visually identical between hard-coded and visitor cards per spec. */
+.admin-status-pip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: rgba(26, 26, 46, 0.05);
+  color: var(--color-text-soft);
+  white-space: nowrap;
+}
+.admin-status-pip[data-status="pending"] {
+  background: rgba(233, 69, 96, 0.12);
+  color: var(--color-accent);
+}
+.admin-status-pip[data-status="approved"] {
+  background: rgba(22, 163, 74, 0.10);
+  color: #16a34a;
+}
+.admin-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: currentColor;
+  flex-shrink: 0;
+}
