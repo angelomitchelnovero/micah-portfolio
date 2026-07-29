@@ -755,50 +755,90 @@ function initTestimonialsCarousel(root, opts = {}) {
 }
 
 // ============================================================
-// Visitor feedback form (saves to localStorage, renders below testimonials)
+// Visitor feedback form (backed by /.netlify/functions/feedback)
+// ------------------------------------------------------------
+// Submissions and admin actions are persisted on the server so every
+// visitor sees the same set of approved feedback. localStorage is kept
+// only as a small offline cache so the page still renders something
+// when the function is unreachable (e.g. file:// testing).
 // ============================================================
 
 const FEEDBACK_KEY = 'micah-portfolio-feedback';
-const FEEDBACK_MAX = 50; // cap to avoid unbounded growth
+const FEEDBACK_CACHE_MAX = 50; // tiny cache, capped
+const FEEDBACK_ENDPOINT = '/.netlify/functions/feedback';
 let selectedRating = 0;
 
-function loadFeedback() {
+// --- Server-backed feedback (the source of truth) ---
+
+async function fetchFeedback(opts = {}) {
+  // opts.admin = true -> ?view=admin (returns all entries, server requires x-admin-hash)
+  const url = FEEDBACK_ENDPOINT + (opts.admin ? '?view=admin' : '');
+  const headers = {};
+  if (opts.admin && window.ADMIN_CONFIG && window.ADMIN_CONFIG.passwordHash) {
+    headers['x-admin-hash'] = window.ADMIN_CONFIG.passwordHash;
+  }
+  const res = await fetch(url, { method: 'GET', headers });
+  if (!res.ok) throw new Error('Feedback fetch failed: ' + res.status);
+  const data = await res.json();
+  return Array.isArray(data && data.entries) ? data.entries : [];
+}
+
+async function submitFeedbackToServer(entry) {
+  const res = await fetch(FEEDBACK_ENDPOINT, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(entry),
+  });
+  if (!res.ok) {
+    let msg = 'Submit failed (' + res.status + ').';
+    try {
+      const data = await res.json();
+      if (data && data.error) msg = data.error;
+    } catch (_) { /* keep generic */ }
+    throw new Error(msg);
+  }
+  return res.json();
+}
+
+async function adminFeedbackAction(action, id) {
+  if (!window.ADMIN_CONFIG || !window.ADMIN_CONFIG.passwordHash) {
+    throw new Error('Admin not configured.');
+  }
+  const res = await fetch(FEEDBACK_ENDPOINT + '?action=' + encodeURIComponent(action), {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-admin-hash': window.ADMIN_CONFIG.passwordHash,
+    },
+    body: JSON.stringify({ id }),
+  });
+  if (!res.ok) {
+    let msg = 'Action failed (' + res.status + ').';
+    try {
+      const data = await res.json();
+      if (data && data.error) msg = data.error;
+    } catch (_) { /* keep generic */ }
+    throw new Error(msg);
+  }
+  return res.json();
+}
+
+// --- localStorage cache (offline fallback only) ---
+
+function loadFeedbackCache() {
   try {
     const raw = localStorage.getItem(FEEDBACK_KEY);
     const list = raw ? JSON.parse(raw) : [];
-    if (!Array.isArray(list)) return [];
-    // Migration: older entries may not have id/status. Treat legacy data as
-    // already-approved (so users who already submitted aren't punished by
-    // the new moderation workflow), but give them an id so admin actions work.
-    let migrated = false;
-    const out = list.map((f) => {
-      if (!f || typeof f !== 'object') return null;
-      const fixed = Object.assign({}, f);
-      if (!fixed.id) { fixed.id = 'fb_' + (fixed.ts || Date.now()) + '_' + Math.random().toString(36).slice(2, 8); migrated = true; }
-      if (fixed.status !== 'pending' && fixed.status !== 'approved') {
-        fixed.status = 'approved';
-        migrated = true;
-      }
-      return fixed;
-    }).filter(Boolean);
-    if (migrated) saveFeedbackRaw(out);
-    return out;
+    return Array.isArray(list) ? list : [];
   } catch (_) {
     return [];
   }
 }
 
-function saveFeedbackRaw(list) {
+function saveFeedbackCache(list) {
   try {
-    localStorage.setItem(FEEDBACK_KEY, JSON.stringify(list.slice(0, FEEDBACK_MAX)));
-    return true;
-  } catch (_) {
-    return false;
-  }
-}
-
-function saveFeedback(list) {
-  return saveFeedbackRaw(list);
+    localStorage.setItem(FEEDBACK_KEY, JSON.stringify(list.slice(0, FEEDBACK_CACHE_MAX)));
+  } catch (_) { /* private mode / disabled */ }
 }
 
 function renderStars(container, rating, opts = {}) {
@@ -896,37 +936,50 @@ function renderFeedbackList() {
 
   // Public: hard-coded + approved visitor only. Newest first for visitors.
   const hardcoded = (window.SITE_DATA && window.SITE_DATA.testimonials && window.SITE_DATA.testimonials.items) || [];
-  const approved = loadFeedback()
-    .filter((f) => f.status === 'approved')
-    .sort((a, b) => (b.ts || 0) - (a.ts || 0))
-    .map((f) => ({
-      id: f.id, kind: 'visitor',
-      rating: f.rating, message: f.message,
-      author: (f.name && f.name.trim()) || 'Anonymous',
-      authorMeta: f.authorMeta || '', ts: f.ts,
-      // Note: no `status` field here — the public site has no business
-      // showing internal moderation state. Admin uses status separately.
-    }));
 
+  // Render ASAP with the localStorage cache so the strip isn't empty while
+  // the network request is in flight, then overwrite with the server's view.
+  const cache = loadFeedbackCache()
+    .filter((f) => f.status === 'approved')
+    .map(toVisitorCard);
+  paintFeedbackList(root, carouselRoot, hardcoded, cache);
+
+  fetchFeedback()
+    .then((entries) => {
+      // Keep the cache fresh (only approved — that's all the public sees).
+      const approved = entries.filter((f) => f.status === 'approved');
+      saveFeedbackCache(approved);
+      paintFeedbackList(root, carouselRoot, hardcoded, approved.map(toVisitorCard));
+    })
+    .catch((err) => {
+      console.warn('Feedback fetch failed, using cached list:', err);
+    });
+}
+
+function toVisitorCard(f) {
+  return {
+    id: f.id, kind: 'visitor',
+    rating: f.rating, message: f.message,
+    author: (f.name && f.name.trim()) || 'Anonymous',
+    authorMeta: f.authorMeta || '', ts: f.ts,
+    // No `status` here on the public site — the server still filters to
+    // approved only, so the status field is omitted to keep the markup
+    // identical to the pre-server version.
+  };
+}
+
+function paintFeedbackList(root, carouselRoot, hardcoded, visitorCards) {
   const items = [
     ...hardcoded.map((t) => ({
       kind: 'hardcoded',
       rating: t.rating, message: t.quote,
       author: t.author, authorMeta: t.authorMeta,
     })),
-    ...approved,
+    ...visitorCards,
   ];
-
-  const cards = items.map(buildCardHtml).join('');
-  root.innerHTML = cards;
+  root.innerHTML = items.map(buildCardHtml).join('');
   testimonialsRendered = true;
-
-  // Admin status (banner, pending counts) was moved to the header pill
-  // ("Micah.admin" + Exit admin), so nothing else to toggle here.
-
-  if (carouselRoot) {
-    initTestimonialsCarousel(carouselRoot, { pageSize: 3 });
-  }
+  if (carouselRoot) initTestimonialsCarousel(carouselRoot, { pageSize: 3 });
 }
 
 function renderFeedbackAdmin() {
@@ -940,15 +993,36 @@ function renderFeedbackAdmin() {
   // Only visitor cards get a Show/Hide/Delete action row; hard-coded cards
   // are pinned and cannot be moderated.
   const hardcoded = (window.SITE_DATA && window.SITE_DATA.testimonials && window.SITE_DATA.testimonials.items) || [];
-  const allVisitor = loadFeedback().sort((a, b) => (b.ts || 0) - (a.ts || 0));
 
+  // Paint immediately with the cache so admin mode shows something even
+  // before the server responds.
+  const cached = loadFeedbackCache();
+  paintFeedbackAdmin(root, carouselRoot, hardcoded, cached);
+
+  fetchFeedback({ admin: true })
+    .then((entries) => {
+      saveFeedbackCache(entries);
+      paintFeedbackAdmin(root, carouselRoot, hardcoded, entries);
+    })
+    .catch((err) => {
+      console.warn('Admin feedback fetch failed:', err);
+      const status = document.getElementById('feedbackStatus');
+      if (status) {
+        status.textContent = "Couldn't reach the feedback server — showing cached list. Admin actions won't persist until it's back.";
+        status.className = 'text-sm text-accent';
+      }
+    });
+}
+
+function paintFeedbackAdmin(root, carouselRoot, hardcoded, allVisitor) {
+  const sortedVisitor = allVisitor.slice().sort((a, b) => (b.ts || 0) - (a.ts || 0));
   const hardcodedCards = hardcoded.map((t) => buildCardHtml({
     kind: 'hardcoded',
     rating: t.rating, message: t.quote,
     author: t.author, authorMeta: t.authorMeta,
   })).join('');
 
-  const visitorCards = allVisitor.map((f) => {
+  const visitorCards = sortedVisitor.map((f) => {
     const base = buildCardHtml({
       id: f.id, kind: 'visitor', status: f.status,
       rating: f.rating, message: f.message,
@@ -965,14 +1039,8 @@ function renderFeedbackAdmin() {
     );
   }).join('');
 
-  // Render hard-coded first, then ALL visitor feedback into the strip.
   root.innerHTML = hardcodedCards + visitorCards;
   testimonialsRendered = true;
-
-  // Admin uses the same 3-up sliding carousel as the public view — every
-  // card goes through the same merge logic so layout stays consistent.
-  // (Admin cards still get per-card Show/Hide/Delete action rows; those
-  // live inside the slide and don't affect the carousel math.)
   root.classList.remove('is-carousel');
 
   if (carouselRoot) {
@@ -989,22 +1057,18 @@ function renderFeedbackAdmin() {
   });
 }
 
-function handleAdminAction(action, id) {
-  const list = loadFeedback();
-  const idx = list.findIndex((f) => f.id === id);
-  if (idx === -1) return;
-
-  if (action === 'show') {
-    list[idx].status = 'approved';
-  } else if (action === 'hide') {
-    list[idx].status = 'pending';
-  } else if (action === 'delete') {
-    list.splice(idx, 1);
-  } else {
-    return;
+async function handleAdminAction(action, id) {
+  try {
+    await adminFeedbackAction(action, id);
+    renderFeedbackAdmin();
+  } catch (err) {
+    console.error('Admin action failed:', err);
+    const status = document.getElementById('feedbackStatus');
+    if (status) {
+      status.textContent = "Couldn't reach the feedback server. Try again in a moment.";
+      status.className = 'text-sm text-accent';
+    }
   }
-  saveFeedback(list);
-  renderFeedbackAdmin();
 }
 
 function renderFeedback() {
@@ -1054,48 +1118,56 @@ function renderFeedback() {
     const originalLabel = submitBtn.textContent;
     submitBtn.textContent = 'Submitting…';
 
-    const entry = {
-      id: 'fb_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
+    const payload = {
       name: name.slice(0, 60),
       authorMeta: company.slice(0, 80),
       rating,
       message: message.slice(0, 500),
-      ts: Date.now(),
-      status: 'pending',
     };
-    const list = loadFeedback();
-    list.push(entry);
-    const ok = saveFeedback(list);
 
-    if (!ok) {
-      statusEl.textContent = "Couldn't save — your browser blocked local storage. Feedback will only last this session.";
-      statusEl.className = 'text-sm text-accent';
-    } else {
-      statusEl.textContent = 'Thanks! Your feedback is awaiting admin review.';
-      statusEl.className = 'text-sm text-green-700';
-    }
-
-    // Reset form + clear stars. Do NOT re-render the public list — pending
-    // submissions are hidden from visitors until the admin approves them.
-    form.reset();
-    selectedRating = 0;
-    if (stars) previewStars(stars, 0);
-
-    // If we're currently in admin mode, refresh the admin panel so the new
-    // pending entry is immediately visible/manageable.
-    if (typeof isAdminAuthed === 'function' && isAdminAuthed()) {
-      renderFeedbackAdmin();
-    }
-
-    submitBtn.disabled = false;
-    submitBtn.textContent = originalLabel;
-
-    setTimeout(() => {
-      if (statusEl.textContent.startsWith('Thanks')) {
-        statusEl.textContent = '';
-        statusEl.className = 'text-sm text-gray-500';
-      }
-    }, 5000);
+    submitFeedbackToServer(payload)
+      .then(() => {
+        statusEl.textContent = 'Thanks! Your feedback is awaiting admin review.';
+        statusEl.className = 'text-sm text-green-700';
+        // If we're in admin mode, refresh so the new pending entry shows up
+        // for moderation immediately.
+        if (typeof isAdminAuthed === 'function' && isAdminAuthed()) {
+          renderFeedbackAdmin();
+        }
+      })
+      .catch((err) => {
+        // Network/server failure — keep a local copy as a best-effort so
+        // the visitor can at least see their own feedback locally. It won't
+        // be visible to others until the server is reachable again.
+        console.warn('Feedback submit failed, saving locally:', err);
+        const list = loadFeedbackCache();
+        list.push({
+          id: 'fb_local_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
+          name: payload.name,
+          authorMeta: payload.authorMeta,
+          rating: payload.rating,
+          message: payload.message,
+          ts: Date.now(),
+          status: 'pending',
+        });
+        saveFeedbackCache(list);
+        statusEl.textContent = "Couldn't reach the server — saved locally for now and will be lost when you close this tab.";
+        statusEl.className = 'text-sm text-accent';
+      })
+      .finally(() => {
+        // Reset form + clear stars regardless of success/failure.
+        form.reset();
+        selectedRating = 0;
+        if (stars) previewStars(stars, 0);
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalLabel;
+        setTimeout(() => {
+          if (statusEl.textContent && statusEl.textContent.startsWith('Thanks')) {
+            statusEl.textContent = '';
+            statusEl.className = 'text-sm text-gray-500';
+          }
+        }, 5000);
+      });
   });
 }
 

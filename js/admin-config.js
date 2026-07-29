@@ -8,6 +8,10 @@
      1. Hash the new password:
           node -e "console.log(require('crypto').createHash('sha256').update('YourNewPassword').digest('hex'))"
      2. Paste the resulting hex digest below, replacing passwordHash.
+     3. Set the same value as the ADMIN_PASSWORD_HASH environment variable
+        in the Netlify site dashboard (used by netlify/functions/feedback.js
+        to protect Show/Hide/Delete actions so feedback stays in sync across
+        every visitor's browser).
 
    Auth state (30-minute expiry after each unlock) is stored in
    localStorage under "micah-portfolio-admin-authed".
@@ -16,6 +20,7 @@
 (function () {
   window.ADMIN_CONFIG = Object.freeze({
     // SHA-256("Password-1a") — case-sensitive.
+    // MUST match the ADMIN_PASSWORD_HASH env var in the Netlify dashboard.
     passwordHash: '5a638872c938c0f0ee0d9ae3c0473dfbffc0f8510dda0bda92ea6b4a020b57a4',
     // Auth expires 30 minutes after last successful unlock.
     authTtlMs: 30 * 60 * 1000,
