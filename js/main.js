@@ -631,38 +631,50 @@ function initTestimonialsCarousel(root, opts = {}) {
   strip.style.transform = '';
   slides.forEach((s) => { s.style.width = ''; });
 
-  // Measure the stage's inner content width (clientWidth excludes the
-  // stage's px-2 padding so the strip lines up flush with the inner
-  // edges, not the outer borders).
-  const stageWidth = Math.max(1, Math.round(stage.clientWidth));
+  // measure() reads stage.clientWidth, applies per-slide widths, sets the
+  // strip width to pageCount * stageWidth, and re-shows the current page.
+  // We expose it so a ResizeObserver can call it whenever the stage's
+  // size changes (which happens after re-renders if the browser hadn't
+  // fully laid out the previous frame) — without that, the strip's
+  // translateX would point at a stale stageWidth and clicking an arrow
+  // would not move the strip correctly until a refresh.
+  let stageWidth = 0;
+  let slideWidth = 0;
 
-  // Each slide is exactly stageWidth/3 minus the gap (the gap lives
-  // between adjacent slides; we absorb it into each slide's width so
-  // the visible cards line up flush with the stage edges).
-  const slideWidth = Math.floor((stageWidth - GAP * (pageSize - 1)) / pageSize);
+  function measure() {
+    const w = Math.max(1, Math.round(stage.clientWidth));
+    if (w === stageWidth) return false; // nothing changed, skip work
+    stageWidth = w;
+    slideWidth = Math.floor((stageWidth - GAP * (pageSize - 1)) / pageSize);
+    slides.forEach((s) => { s.style.width = slideWidth + 'px'; });
+    strip.style.width = (pageCount * stageWidth) + 'px';
+    // Keep the strip pinned to the current page using the new width.
+    strip.style.transform = `translateX(${-page * stageWidth}px)`;
+    return true;
+  }
 
-  // Apply the width to every slide (set in pixels — predictable, no
-  // percent-of-strip math to reason about).
-  slides.forEach((s) => { s.style.width = slideWidth + 'px'; });
-
-  // The strip is pageCount * stageWidth wide so it overflows to the right
-  // and we can translate it back into view per page.
-  strip.style.width = (pageCount * stageWidth) + 'px';
-
-  // Render dots if there's more than one page.
-  if (dotsRow) {
+  // Render dots whenever pageCount changes (so the user can jump).
+  function renderDots() {
+    if (!dotsRow) return;
     dotsRow.innerHTML = pageCount > 1
       ? Array.from({ length: pageCount }, (_, i) =>
           `<button class="w-2.5 h-2.5 rounded-full transition" data-dot="${i}" aria-label="Go to page ${i + 1}"></button>`,
         ).join('')
       : '';
+    dotsRow.hidden = pageCount <= 1;
+  }
+
+  function updateArrowVisibility() {
+    const hidden = pageCount <= 1;
+    if (prev) prev.hidden = hidden;
+    if (next) next.hidden = hidden;
+    if (dotsRow) dotsRow.hidden = hidden;
   }
 
   const show = (i) => {
     page = ((i % pageCount) + pageCount) % pageCount;
-    // Slide by exactly stageWidth per page.
+    if (!stageWidth) measure();
     strip.style.transform = `translateX(${-page * stageWidth}px)`;
-    // Toggle active dots.
     if (dotsRow) {
       Array.from(dotsRow.querySelectorAll('[data-dot]')).forEach((dot, k) => {
         dot.classList.toggle('is-active', k === page);
@@ -670,19 +682,11 @@ function initTestimonialsCarousel(root, opts = {}) {
     }
   };
 
-  // Show arrows + dots only when there's something to navigate to.
-  const arrowsHidden = pageCount <= 1;
-  if (prev) prev.hidden = arrowsHidden;
-  if (next) next.hidden = arrowsHidden;
-  if (dotsRow) dotsRow.hidden = arrowsHidden;
+  renderDots();
+  updateArrowVisibility();
 
   if (prev) prev.addEventListener('click', (e) => { e.stopPropagation(); show(page - 1); }, { signal });
   if (next) next.addEventListener('click', (e) => { e.stopPropagation(); show(page + 1); }, { signal });
-  // Don't let the root's swipe gesture hijack a tap on the arrows —
-  // pointerdown on the button bubbles to the root and would otherwise
-  // set startX, then the subsequent pointerup might think the user
-  // tried to swipe (with tiny dx). stopPropagation keeps the swipe
-  // handler out of the picture for arrow taps.
   if (prev) prev.addEventListener('pointerdown', (e) => e.stopPropagation(), { signal });
   if (next) next.addEventListener('pointerdown', (e) => e.stopPropagation(), { signal });
   if (dotsRow) {
@@ -694,13 +698,11 @@ function initTestimonialsCarousel(root, opts = {}) {
     }, { signal });
   }
 
-  // Keyboard arrows when the carousel has focus.
   root.addEventListener('keydown', (e) => {
     if (e.key === 'ArrowLeft')  { show(page - 1); e.preventDefault(); }
     if (e.key === 'ArrowRight') { show(page + 1); e.preventDefault(); }
   }, { signal });
 
-  // Touch / mouse swipe.
   let startX = null;
   root.addEventListener('pointerdown', (e) => { startX = e.clientX; }, { signal });
   root.addEventListener('pointerup', (e) => {
@@ -711,11 +713,32 @@ function initTestimonialsCarousel(root, opts = {}) {
   }, { signal });
   root.addEventListener('pointercancel', () => { startX = null; }, { signal });
 
-  show(0);
+  // First measurement + first show happen on the next frame, so the
+  // browser has had a chance to lay out the new DOM (slides were just
+  // innerHTML-replaced) before we read stage.clientWidth. Without this
+  // rAF, the measurement sometimes runs against a stale layout where the
+  // stage hasn't been re-sized yet — leaving the strip at the wrong
+  // translateX and breaking the arrow buttons until a refresh.
+  requestAnimationFrame(() => {
+    measure();
+    show(0);
+  });
 
-  // Recompute sizes on resize so the layout stays flush with the stage
-  // when the viewport changes (mobile rotation, window resize, etc.).
-  // We re-derive pageSize/pageCount because they depend on viewport width.
+  // Re-measure if the stage's size changes after init (window resize,
+  // font load shifting card heights, sidebar opens, etc.). Skips work
+  // when the width is unchanged, so it's cheap to leave attached.
+  if (typeof ResizeObserver !== 'undefined' && stage) {
+    const ro = new ResizeObserver(() => { if (measure()) show(page); });
+    ro.observe(stage);
+    // Tie the observer's lifetime to this init's signal so it doesn't
+    // outlive the carousel across re-renders.
+    signal.addEventListener('abort', () => ro.disconnect(), { once: true });
+  }
+
+  // Window-resize handler (kept for browsers without ResizeObserver and
+  // for the responsive pageSize switch at the 640px breakpoint, which
+  // ResizeObserver on `stage` alone doesn't cover because the breakpoint
+  // is viewport-width-based, not stage-width-based).
   let resizeTimer = null;
   const onResize = () => {
     if (resizeTimer) clearTimeout(resizeTimer);
@@ -724,31 +747,11 @@ function initTestimonialsCarousel(root, opts = {}) {
         ? Math.min(basePageSize, 1)
         : basePageSize;
       const newPageCount = Math.max(1, Math.ceil(total / newPageSize));
-      // Clamp page to the new range so we never land past the last page.
       if (page >= newPageCount) page = newPageCount - 1;
-      const w = Math.max(1, Math.round(stage.clientWidth));
-      const newSlide = Math.floor((w - GAP * (newPageSize - 1)) / newPageSize);
-      slides.forEach((s) => { s.style.width = newSlide + 'px'; });
-      strip.style.width = (newPageCount * w) + 'px';
-      // Update dots so they reflect the new pageCount.
-      if (dotsRow) {
-        dotsRow.innerHTML = newPageCount > 1
-          ? Array.from({ length: newPageCount }, (_, i) =>
-              `<button class="w-2.5 h-2.5 rounded-full transition" data-dot="${i}" aria-label="Go to page ${i + 1}"></button>`,
-            ).join('')
-          : '';
-        dotsRow.hidden = newPageCount <= 1;
-      }
-      // Show/hide arrows based on the new pageCount.
-      if (prev) prev.hidden = newPageCount <= 1;
-      if (next) next.hidden = newPageCount <= 1;
-      // Re-translate to the current page using the new width.
-      strip.style.transform = `translateX(${-page * w}px)`;
-      if (dotsRow) {
-        Array.from(dotsRow.querySelectorAll('[data-dot]')).forEach((dot, k) => {
-          dot.classList.toggle('is-active', k === page);
-        });
-      }
+      measure();
+      renderDots();
+      updateArrowVisibility();
+      show(page);
     }, 80);
   };
   window.addEventListener('resize', onResize, { signal });
@@ -836,6 +839,19 @@ async function adminFeedbackAction(action, id) {
     throw new Error(msg);
   }
   return res.json();
+}
+
+function renderFeedbackAdminFromEntries(entries) {
+  // Paint a fresh admin view from a list of entries we already have in
+  // hand — no fetch, no cache flash. Used after an admin action returns
+  // its updated list, so the change is visible immediately rather than
+  // after a second network round-trip.
+  const root = document.querySelector('[data-testimonials]');
+  const carouselRoot = document.querySelector('[data-testimonials-root]');
+  if (!root) return;
+  const hardcoded = (window.SITE_DATA && window.SITE_DATA.testimonials && window.SITE_DATA.testimonials.items) || [];
+  saveFeedbackCache(entries);
+  paintFeedbackAdmin(root, carouselRoot, hardcoded, entries);
 }
 
 // --- localStorage cache (offline fallback only) ---
@@ -1074,8 +1090,16 @@ function paintFeedbackAdmin(root, carouselRoot, hardcoded, allVisitor) {
 
 async function handleAdminAction(action, id) {
   try {
-    await adminFeedbackAction(action, id);
-    renderFeedbackAdmin();
+    // The server returns the full updated list in the same response —
+    // painting from it skips a second round-trip and avoids the brief
+    // stale-cache flash that made the change look like it didn't apply.
+    const data = await adminFeedbackAction(action, id);
+    const entries = Array.isArray(data && data.entries) ? data.entries : null;
+    if (entries) {
+      renderFeedbackAdminFromEntries(entries);
+    } else {
+      renderFeedbackAdmin();
+    }
   } catch (err) {
     console.error('Admin action failed:', err);
     const status = document.getElementById('feedbackStatus');
