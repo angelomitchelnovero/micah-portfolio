@@ -58,9 +58,17 @@ async function readAll(store) {
     return [];
   } catch (err) {
     // Blobs throws on a missing key — treat as empty list, not an error.
-    if (err && (err.status === 404 || /not found/i.test(String(err.message || "")))) {
-      return [];
-    }
+    // The SDK's exact error shape varies by version ("not found",
+    // status 404, code 'blob_not_found', etc.), so we accept any of these.
+    const msg = String((err && err.message) || "");
+    const code = String((err && err.code) || "");
+    const status = (err && (err.status || err.statusCode)) || 0;
+    const looksLikeMissing =
+      status === 404 ||
+      /not\s*found/i.test(msg) ||
+      code === "blob_not_found" ||
+      err instanceof TypeError === false && /missing/i.test(msg);
+    if (looksLikeMissing) return [];
     console.error("feedback: readAll failed:", err);
     return [];
   }
@@ -156,7 +164,13 @@ exports.handler = async (event) => {
     return bad("Invalid JSON body.");
   }
 
-  const list = await readAll(store);
+  let list;
+  try {
+    list = await readAll(store);
+  } catch (err) {
+    console.error("feedback: readAll threw unexpectedly:", err);
+    return bad("Couldn't read feedback storage.", 500);
+  }
 
   if (action === "approve" || action === "hide" || action === "delete") {
     if (!isAdminAuthed(event)) return bad("Admin auth required.", 401);
@@ -169,7 +183,12 @@ exports.handler = async (event) => {
     } else {
       list[idx].status = action === "approve" ? "approved" : "pending";
     }
-    await writeAll(store, list);
+    try {
+      await writeAll(store, list);
+    } catch (err) {
+      console.error("feedback: writeAll failed:", err);
+      return bad("Couldn't save feedback change.", 500);
+    }
     return ok({ ok: true, entries: list });
   }
 
@@ -177,6 +196,11 @@ exports.handler = async (event) => {
   const entry = sanitizeEntry(payload);
   if (!entry) return bad("Feedback needs a rating (1-5) and a message.");
   list.push(entry);
-  await writeAll(store, list);
+  try {
+    await writeAll(store, list);
+  } catch (err) {
+    console.error("feedback: writeAll on submit failed:", err);
+    return bad("Couldn't save feedback.", 500);
+  }
   return ok({ ok: true, entry }, 201);
 };

@@ -784,17 +784,32 @@ async function fetchFeedback(opts = {}) {
 }
 
 async function submitFeedbackToServer(entry) {
-  const res = await fetch(FEEDBACK_ENDPOINT, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(entry),
-  });
+  let res;
+  try {
+    res = await fetch(FEEDBACK_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(entry),
+    });
+  } catch (networkErr) {
+    // True network failure (offline, DNS, mixed content, blocked by an
+    // extension, etc). The function call itself never happened.
+    throw new Error('Network error reaching ' + FEEDBACK_ENDPOINT + ': ' + networkErr.message);
+  }
   if (!res.ok) {
     let msg = 'Submit failed (' + res.status + ').';
     try {
       const data = await res.json();
       if (data && data.error) msg = data.error;
-    } catch (_) { /* keep generic */ }
+    } catch (_) {
+      // Non-JSON response (e.g. an HTML error page if a rewrite is
+      // intercepting the function URL) — surface enough of the body to
+      // diagnose without dumping pages of HTML into the user's status line.
+      try {
+        const text = await res.text();
+        msg = 'Server returned ' + res.status + ' (non-JSON): ' + text.slice(0, 120);
+      } catch (_) { /* keep generic */ }
+    }
     throw new Error(msg);
   }
   return res.json();
@@ -1138,7 +1153,9 @@ function renderFeedback() {
       .catch((err) => {
         // Network/server failure — keep a local copy as a best-effort so
         // the visitor can at least see their own feedback locally. It won't
-        // be visible to others until the server is reachable again.
+        // be visible to others until the server is reachable again. The full
+        // error is logged to the console for diagnosis (open DevTools and
+        // look for "Feedback submit failed").
         console.warn('Feedback submit failed, saving locally:', err);
         const list = loadFeedbackCache();
         list.push({
@@ -1151,7 +1168,8 @@ function renderFeedback() {
           status: 'pending',
         });
         saveFeedbackCache(list);
-        statusEl.textContent = "Couldn't reach the server — saved locally for now and will be lost when you close this tab.";
+        const detail = (err && err.message) ? ' (' + err.message + ')' : '';
+        statusEl.textContent = "Couldn't reach the server — saved locally for now and will be lost when you close this tab." + detail;
         statusEl.className = 'text-sm text-accent';
       })
       .finally(() => {

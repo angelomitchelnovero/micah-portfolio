@@ -4,3 +4,12 @@
 
 [functions]
   node_bundler = "esbuild"
+
+# Explicit rewrite so /.netlify/functions/* is always served by a function,
+# not intercepted by any future SPA-style 200 fallback rule. The default
+# Netlify behavior already does this, but pinning it here keeps feedback
+# submit working even if a `_redirects` or "not found" rule is ever added.
+[[redirects]]
+  from = "/.netlify/functions/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
