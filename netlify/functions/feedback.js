@@ -204,7 +204,7 @@ exports.handler = async (event) => {
     return bad("Couldn't read feedback storage.", 500);
   }
 
-  if (action === "approve" || action === "hide" || action === "delete") {
+  if (action === "approve" || action === "show" || action === "hide" || action === "delete") {
     if (!isAdminAuthed(event)) return bad("Admin auth required.", 401);
     const id = String(payload.id || "");
     if (!id) return bad("Missing id.");
@@ -213,7 +213,9 @@ exports.handler = async (event) => {
     if (action === "delete") {
       list.splice(idx, 1);
     } else {
-      list[idx].status = action === "approve" ? "approved" : "pending";
+      // "show" is the client-side label for "make this visible on the public
+      // site"; "approve" is the internal name. Same effect on the server.
+      list[idx].status = (action === "approve" || action === "show") ? "approved" : "pending";
     }
     try {
       await writeAll(store, list);
