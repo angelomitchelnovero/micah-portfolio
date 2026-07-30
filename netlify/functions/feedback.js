@@ -26,7 +26,7 @@
  * ------------------------------------------------------------
  */
 
-const { getStore } = require("@netlify/blobs");
+const { getStore, connectLambda } = require("@netlify/blobs");
 
 const STORE_NAME = "feedback";
 const BLOB_KEY = "feedback";
@@ -127,15 +127,47 @@ exports.handler = async (event) => {
   }
 
   let store;
+  let storeInitError = null;
+  // Try the env-based form first (the default for normal Netlify functions
+  // when NETLIFY_BLOBS_CONTEXT is auto-injected). If it throws because the
+  // runtime didn't inject the context (common in Lambda compatibility
+  // mode), fall back to connectLambda(event) which reads the context out
+  // of event.blobs + the x-nf-site-id / x-nf-deploy-id headers that
+  // Netlify always sends. connectLambda throws when event.blobs is
+  // missing (non-Lambda events) so we swallow that and try the API form
+  // as a last resort.
   try {
     store = getStore(STORE_NAME);
   } catch (err) {
-    // Outside Netlify (local dev without netlify-cli) the Blobs SDK can
-    // throw because the site context isn't set. Fall back to a no-op
-    // response so the client can show a friendly "feedback unavailable"
-    // state instead of a 500.
-    console.error("feedback: getStore failed:", err);
-    return bad("Feedback storage is not available in this environment.", 503);
+    storeInitError = err;
+    try {
+      connectLambda(event);
+      store = getStore(STORE_NAME);
+    } catch (err2) {
+      storeInitError = err2;
+      // Last-resort fallback: API-access form with explicit credentials.
+      // NETLIFY_SITE_ID is auto-injected by Netlify. NETLIFY_BLOBS_TOKEN
+      // is a personal access token set manually in the dashboard.
+      const siteID = process.env.NETLIFY_SITE_ID || process.env.SITE_ID;
+      const token = process.env.NETLIFY_BLOBS_TOKEN || process.env.NETLIFY_API_TOKEN;
+      if (siteID && token) {
+        try {
+          store = getStore({ name: STORE_NAME, siteID, token });
+          storeInitError = null;
+        } catch (err3) {
+          storeInitError = err3;
+        }
+      }
+    }
+  }
+
+  if (!store) {
+    const msg = storeInitError && storeInitError.message ? storeInitError.message : String(storeInitError || "unknown");
+    console.error("feedback: could not initialize store:", msg);
+    return bad(
+      "Feedback storage is not available in this environment (" + msg + ").",
+      503
+    );
   }
 
   const params = event.queryStringParameters || {};
